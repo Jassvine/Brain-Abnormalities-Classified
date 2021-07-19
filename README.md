@@ -1,8 +1,14 @@
 # Brain-Abnormalities-Classified
 Using Fuzzy logic techniques FCM and Mamdani
- 1. Obtain data (Kaggle)
- 2. Pre-processing
- 3. Feature selection (BrainClassification - Boruta)
- 4. Mamdani (BrainTumor.fis)
- 5. FCM (BrainClassification)
- 6. Analysis
+BorutaImage - Graph png
+
+BorutaWorks - Explanation how boruta feature selection works
+
+BrainClassification - Using R studio (fcm Data driven + feature selection + data cleaning)
+
+BrainTumour.fis - Mamdani (knowledge driven)
+
+Fatality Classifications based on abnormalities in brain pdf - summary report
+
+Research summary - applications of fuzzy
+
