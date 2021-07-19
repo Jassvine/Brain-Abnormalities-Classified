@@ -1,0 +1,142 @@
+library(FactoMineR)
+library(factoextra)
+library(tidyverse)
+library(cluster)
+library(magrittr)
+library(dplyr)
+library(fclust)
+library(ppclust)
+
+library(VIM)
+library(readxl)
+data <- read_excel("C:/Users/User/Downloads/data (2).xlsx")
+View(data)
+
+
+#HCM
+#remove Na NaN, column 11 = NaN
+datafix <- data[ ,-c(1,11)]
+view(datafix)
+#best cluster for elbow method
+fviz_nbclust(datafix,kmeans,method="wss")
+#best cluster for silhouette method
+fviz_nbclust(datafix,kmeans)
+#best cluster for kmeans
+final=kmeans(datafix,2)
+print(final)
+#visualise clustering
+fviz_cluster(final,data=datafix)
+#clustering in table
+tcluster=data.frame(datafix,final$cluster)
+view(tcluster)
+#Silhouette method
+kResults= pam(datafix, k =2)
+plot(kResults)
+#truth table
+table(data$death01,final$cluster)
+summary(datafix)
+sd(datafix$RNASeqCluster, na.rm = TRUE)
+
+#prepare data for selection  -
+library(TH.data)
+library(caret)
+data("datafix", package = "TH.data")
+trainData <- datafix
+head(trainData)
+
+# install.packages('Boruta')
+library(Boruta)
+# Perform Boruta search
+boruta_output <- Boruta(death01 ~ ., data=na.omit(trainData), doTrace=0)  
+names(boruta_output)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+
+#tentative rough fix
+roughFixMod <- TentativeRoughFix(boruta_output)
+boruta_signif <- getSelectedAttributes(roughFixMod)
+print(boruta_signif)
+
+boruta.df <- attStats(boruta_output)
+class(boruta.df)
+print(boruta.df)
+#now calculate the importance 
+# Variable Importance Scores (confirmed)
+imps <- attStats(roughFixMod)
+imps2 = imps[imps$decision != 'Rejected', c('meanImp', 'decision')]
+head(imps2[order(-imps2$meanImp), ])  # descending sort
+
+#plotting the rejected variables to see which one to rule out
+plot(boruta_output, cex.axis=.7, las=2, xlab = "", main="Variable Importance ")
+
+
+#FCM
+#remove column from the data based on feature selection
+Data <- data[ ,-c(1, 2, 4, 5, 6, 7, 8, 11, 12, 13, 14, 16, 17, 18 )]
+view(Data)
+#execute the clustering process
+mri_df <- Data
+res.fcm <- fcm(mri_df, centers=2)
+summary(res.fcm)
+#Plot graph for clustering
+res.fcm2=ppclust2(res.fcm,"kmeans")
+fviz_cluster(res.fcm2,data=Data,palette="jco",repel=FALSE)
+#Silhouette method
+kResults= pam(Data, k =2)
+summary(kResults)
+plot(kResults)
+
+
+#no need
+
+#data preprosessing
+#Percentage missing value
+mean(is.na(data$Patient))*100
+mean(is.na(data$RNASeqCluster))*100
+mean(is.na(data$MethylationCluster))*100
+mean(is.na(data$miRNACluster))*100
+mean(is.na(data$CNCluster))*100
+mean(is.na(data$RPPACluster))*100
+mean(is.na(data$OncosignCluster))*100
+mean(is.na(data$COCCluster))*100
+mean(is.na(data$histological_type))*100
+mean(is.na(data$neoplasm_histologic_grade))*100
+mean(is.na(data$tumor_tissue_site))*100
+mean(is.na(data$laterality))*100
+mean(is.na(data$tumor_location))*100
+mean(is.na(data$gender))*100
+mean(is.na(data$age_at_initial_pathologic))*100
+mean(is.na(data$race))*100
+mean(is.na(data$ethnicity))*100
+mean(is.na(data$death01))*100
+
+#calculate unique rate 
+unique(data[c("Patient")]) #total unique rate /110
+unique(data[c("RNASeqCluster")])
+unique(data[c("MethylationCluster")])
+unique(data[c("miRNACluster")])
+unique(data[c("CNCluster")])
+unique(data[c("RPPACluster")])
+unique(data[c("OncosignCluster")])
+unique(data[c("COCCluster")])
+unique(data[c("histological_type")])
+unique(data[c("neoplasm_histologic_grade")])
+unique(data[c("tumor_tissue_site")])
+unique(data[c("laterality")])
+unique(data[c("tumor_location")])
+unique(data[c("gender")])
+unique(data[c("age_at_initial_pathologic")])
+unique(data[c("race")])
+unique(data[c("ethnicity")])
+unique(data[c("death01")])
+
+#accuracy for original data (tak sure)
+head(data$death01)
+mymodel=glm(death01~RNASeqCluster+MethylationCluster+miRNACluster+CNCluster+RPPACluster+OncosignCluster+COCCluster+histological_type+neoplasm_histologic_grade+tumor_tissue_site+laterality+tumor_location+gender+age_at_initial_pathologic+race+ethnicity,
+            family = binomial(link = "logit"), data = data)
+pmymodel=predict(mymodel,data)
+
+tab=table(pmymodel>0.5,projectData$death01)
+tab
+
+sum(diag(tab))/sum(tab)*100
